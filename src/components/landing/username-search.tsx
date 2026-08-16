@@ -56,7 +56,7 @@ export function UsernameSearch() {
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}
-            placeholder="username"
+            placeholder="username, u/username, or profile URL"
             aria-label="Reddit username"
             value={value}
             onChange={(e) => {

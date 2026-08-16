@@ -1,4 +1,5 @@
 import type { RedditProvider } from "./reddit-provider";
+import { queryActivity } from "./activity-query";
 import {
   RedditLookupException,
   type ActivityQueryParams,
@@ -459,58 +460,7 @@ export class MockRedditProvider implements RedditProvider {
     await simulateLatency();
     validateUsernameOrThrow(username);
     const { items } = generateAccount(username);
-
-    let filtered = items;
-
-    if (params.kind && params.kind !== "all") {
-      filtered = filtered.filter((i) => i.kind === params.kind);
-    }
-    if (params.subreddit) {
-      filtered = filtered.filter(
-        (i) => i.subreddit.toLowerCase() === params.subreddit!.toLowerCase()
-      );
-    }
-    if (params.search) {
-      const q = params.search.toLowerCase();
-      filtered = filtered.filter((i) => {
-        const haystack =
-          i.kind === "post" ? `${i.title} ${i.body ?? ""}` : `${i.body} ${i.postTitle}`;
-        return haystack.toLowerCase().includes(q);
-      });
-    }
-    if (params.timeRange && params.timeRange !== "all") {
-      const rangeDays: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 };
-      const cutoff = daysAgo(rangeDays[params.timeRange]);
-      filtered = filtered.filter((i) => new Date(i.createdAt) >= cutoff);
-    }
-
-    const sort = params.sort ?? "new";
-    const sorted = [...filtered].sort((a, b) => {
-      switch (sort) {
-        case "top":
-          return b.score - a.score;
-        case "old":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case "controversial":
-          return Math.abs(a.score - 50) - Math.abs(b.score - 50);
-        case "new":
-        default:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-    });
-
-    const pageSize = params.pageSize || 10;
-    const page = params.page || 1;
-    const start = (page - 1) * pageSize;
-    const pageItems = sorted.slice(start, start + pageSize);
-
-    return {
-      items: pageItems,
-      page,
-      pageSize,
-      totalItems: sorted.length,
-      totalPages: Math.max(1, Math.ceil(sorted.length / pageSize)),
-    };
+    return queryActivity(items, params);
   }
 
   async getUserCommunities(username: string): Promise<SubredditActivity[]> {

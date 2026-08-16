@@ -4,7 +4,12 @@ import { Navbar } from "@/components/landing/navbar";
 import { Footer } from "@/components/landing/footer";
 import { Badge } from "@/components/ui/badge";
 import { getRedditProvider, RedditLookupException, type RedditUserProfile } from "@/lib/reddit";
-import { formatAccountAge, formatCompactNumber, isValidRedditUsername } from "@/lib/utils";
+import {
+  formatAccountAge,
+  formatCompactNumber,
+  isValidRedditUsername,
+  normalizeUsernameInput,
+} from "@/lib/utils";
 
 export async function generateMetadata({ params }: PageProps<"/u/[username]">) {
   const { username } = await params;
@@ -150,7 +155,7 @@ async function loadProfile(
 
 export default async function ProfilePage({ params }: PageProps<"/u/[username]">) {
   const { username: rawUsername } = await params;
-  const username = decodeURIComponent(rawUsername);
+  const username = normalizeUsernameInput(decodeURIComponent(rawUsername));
   const result = await loadProfile(username);
 
   return (

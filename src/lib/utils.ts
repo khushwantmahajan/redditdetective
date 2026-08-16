@@ -11,9 +11,30 @@ export function isValidRedditUsername(username: string): boolean {
   return /^[A-Za-z0-9_-]{3,20}$/.test(username);
 }
 
-/** Strip an optional leading "u/" or "/u/" from user input. */
+/**
+ * Normalizes anything a user might paste into the search box down to a bare
+ * username. Accepts, and all resolve to `"spez"`:
+ *  - `spez`
+ *  - `u/spez` / `/u/spez`
+ *  - `https://www.reddit.com/user/spez/` (or `/u/spez`, old.reddit.com, no
+ *    scheme, trailing path segments like `/submitted`, etc.)
+ */
 export function normalizeUsernameInput(input: string): string {
-  return input.trim().replace(/^\/?u\//i, "");
+  const trimmed = input.trim();
+  if (!trimmed) return trimmed;
+
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(withScheme);
+    if (/(^|\.)reddit\.com$/i.test(url.hostname)) {
+      const match = url.pathname.match(/\/u(?:ser)?\/([^/]+)/i);
+      if (match) return match[1];
+    }
+  } catch {
+    // Not a parseable URL — fall through to plain-text handling below.
+  }
+
+  return trimmed.replace(/^\/?u\//i, "").replace(/\/+$/, "");
 }
 
 export function formatCompactNumber(value: number): string {
