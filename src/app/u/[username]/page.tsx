@@ -1,15 +1,19 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, CalendarDays, Sparkles, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/landing/navbar";
 import { Footer } from "@/components/landing/footer";
-import { Badge } from "@/components/ui/badge";
-import { getRedditProvider, RedditLookupException, type RedditUserProfile } from "@/lib/reddit";
+import { ProfileDashboard } from "@/components/dashboard/profile-dashboard";
 import {
-  formatAccountAge,
-  formatCompactNumber,
-  isValidRedditUsername,
-  normalizeUsernameInput,
-} from "@/lib/utils";
+  getActiveRedditDataSource,
+  getRedditProvider,
+  RedditLookupException,
+  type ActivityStatistics,
+  type PaginatedResult,
+  type RedditActivityItem,
+  type RedditUserProfile,
+  type SubredditActivity,
+} from "@/lib/reddit";
+import { isValidRedditUsername, normalizeUsernameInput } from "@/lib/utils";
 
 export async function generateMetadata({ params }: PageProps<"/u/[username]">) {
   const { username } = await params;
@@ -72,66 +76,16 @@ function errorContentFor(username: string, exception: RedditLookupException) {
   }
 }
 
-function ProfileTeaser({ profile }: { profile: RedditUserProfile }) {
-  const accountAgeLabel = formatAccountAge(profile.createdAt);
-
-  return (
-    <div className="mx-auto max-w-2xl px-4 py-24 sm:px-6">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to search
-      </Link>
-
-      <div className="glass-card mt-8 rounded-2xl p-8 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-violet to-accent-cyan text-2xl font-semibold text-white">
-          {profile.username.slice(0, 2).toUpperCase()}
-        </div>
-        <h1 className="mt-5 text-2xl font-semibold text-foreground">u/{profile.username}</h1>
-        <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-          <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-          Reddit member for {accountAgeLabel}
-        </p>
-
-        <div className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-3">
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-            <p className="text-xl font-semibold text-foreground">
-              {formatCompactNumber(profile.totalKarma)}
-            </p>
-            <p className="mt-1 flex items-center justify-center gap-1 text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3" aria-hidden />
-              Total karma
-            </p>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-            <p className="text-xl font-semibold text-foreground">
-              {formatCompactNumber(profile.postKarma)}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">Post karma</p>
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-xl border border-dashed border-white/15 bg-white/[0.015] p-6">
-          <Badge variant="violet" className="mx-auto w-fit">
-            <Sparkles className="h-3 w-3" aria-hidden />
-            Coming in Phase 2
-          </Badge>
-          <p className="mt-3 text-sm leading-relaxed text-muted">
-            The full profile dashboard — posts, comments, communities, statistics, activity
-            timeline, and the AI evidence system — is being built next. This teaser confirms the
-            Reddit data layer and username lookup are working end-to-end on mock data.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+interface DashboardData {
+  profile: RedditUserProfile;
+  activity: PaginatedResult<RedditActivityItem>;
+  communities: SubredditActivity[];
+  statistics: ActivityStatistics;
 }
 
-async function loadProfile(
+async function loadDashboardData(
   username: string
-): Promise<{ profile: RedditUserProfile } | { errorContent: { title: string; description: string } }> {
+): Promise<{ data: DashboardData } | { errorContent: { title: string; description: string } }> {
   if (!isValidRedditUsername(username)) {
     return {
       errorContent: errorContentFor(
@@ -142,8 +96,16 @@ async function loadProfile(
   }
 
   try {
-    const profile = await getRedditProvider().getUserProfile(username);
-    return { profile };
+    const provider = getRedditProvider();
+    // Fetch the profile first — if the account doesn't exist/is suspended,
+    // there's no point firing off the other three requests.
+    const profile = await provider.getUserProfile(username);
+    const [activity, communities, statistics] = await Promise.all([
+      provider.getUserActivity(username, { page: 1, pageSize: 10, sort: "new", kind: "all" }),
+      provider.getUserCommunities(username),
+      provider.getUserStatistics(username),
+    ]);
+    return { data: { profile, activity, communities, statistics } };
   } catch (err) {
     const exception =
       err instanceof RedditLookupException
@@ -156,14 +118,21 @@ async function loadProfile(
 export default async function ProfilePage({ params }: PageProps<"/u/[username]">) {
   const { username: rawUsername } = await params;
   const username = normalizeUsernameInput(decodeURIComponent(rawUsername));
-  const result = await loadProfile(username);
+  const result = await loadDashboardData(username);
 
   return (
     <>
       <Navbar />
       <main className="flex-1">
-        {"profile" in result ? (
-          <ProfileTeaser profile={result.profile} />
+        {"data" in result ? (
+          <ProfileDashboard
+            username={username}
+            profile={result.data.profile}
+            dataSource={getActiveRedditDataSource()}
+            initialActivity={result.data.activity}
+            communities={result.data.communities}
+            statistics={result.data.statistics}
+          />
         ) : (
           <ErrorState
             title={result.errorContent.title}

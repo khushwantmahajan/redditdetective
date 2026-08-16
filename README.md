@@ -9,9 +9,12 @@ by Reddit, Inc.
 
 ## Status
 
-**Phase 1 of 11 — foundation + landing page.** The app currently runs entirely on realistic mock
-Reddit data behind a provider abstraction, so it works with zero credentials. See
-[Roadmap](#roadmap) below for what's next.
+**Phase 2 of 11 — profile dashboard.** Search a username to get a full dashboard: profile header,
+an overview tab, paginated/sortable/searchable posts and comments, a communities breakdown, and a
+statistics tab with activity charts. The app currently runs entirely on realistic mock Reddit data
+behind a provider abstraction, so it works with zero credentials — a real Reddit Data API provider
+is built and ready (see [Reddit API integration](#reddit-api-integration)) but not yet live pending
+Reddit's App Review. See [Roadmap](#roadmap) below for what's next.
 
 ## Tech stack
 
@@ -59,9 +62,14 @@ needing real Reddit data:
 src/
   app/                     Routes (App Router)
     page.tsx               Landing page
-    u/[username]/page.tsx  Profile page (teaser today; full dashboard in Phase 2)
+    u/[username]/page.tsx  Profile dashboard (server-fetches profile/activity/communities/stats)
+    api/reddit/[username]/activity/route.ts  Route handler the dashboard's client
+                            components call for filtered/sorted/paginated activity — keeps the
+                            Reddit provider (and future real credentials) server-side only
   components/
     landing/                Landing page sections
+    dashboard/               Profile dashboard: header, tabs, activity browser, communities,
+                              statistics/charts — all client components fed by server-fetched data
     ui/                      Small reusable UI primitives (Button, Badge)
     icons/                   Hand-picked icons not available in lucide-react
   lib/
@@ -160,13 +168,15 @@ against.
 ## Roadmap
 
 1. ~~Foundation + landing page~~ ✅
-2. Profile dashboard shell
-3. Mock posts & comments views
-4. Communities & statistics
-5. Activity timeline
-6. AI profile summary architecture
-7. AI evidence system
-8. Search, filtering, sorting, pagination
-9. Polish, responsiveness, accessibility, performance
-10. GitHub + deployment preparation
-11. Research and implement legitimate Reddit API integration
+2. ~~Profile dashboard (header, overview, posts, comments, communities, statistics, search/sort/filter/pagination)~~ ✅
+3. Activity timeline view
+4. AI profile summary architecture
+5. AI evidence system
+6. Polish, responsiveness, accessibility, performance pass
+7. GitHub + deployment preparation
+8. Live-test the real Reddit API provider once Reddit approves API access
+
+Phases 2–4 of the original 11-phase plan (posts/comments views, communities/statistics, and
+search/filter/pagination) were folded into Phase 2 above, since the mock data layer already
+supported all of them together — building one cohesive dashboard was less work and more useful
+than three separate passes over the same UI.

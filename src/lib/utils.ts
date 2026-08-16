@@ -53,3 +53,37 @@ export function formatAccountAge(createdAtIso: string, asOfMs: number = Date.now
   const months = Math.max(1, Math.floor(days / 30));
   return `${months} month${months === 1 ? "" : "s"}`;
 }
+
+/** Absolute date for tooltips/titles, e.g. "Mar 4, 2019". */
+export function formatAbsoluteDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** Relative time ("just now", "5m ago", "3d ago", "2y ago") for activity feeds. */
+export function formatRelativeTime(iso: string, asOfMs: number = Date.now()): string {
+  const seconds = Math.max(0, Math.floor((asOfMs - new Date(iso).getTime()) / 1000));
+  const UNITS: [number, string][] = [
+    [31536000, "y"],
+    [2592000, "mo"],
+    [604800, "w"],
+    [86400, "d"],
+    [3600, "h"],
+    [60, "m"],
+  ];
+  for (const [unitSeconds, label] of UNITS) {
+    if (seconds >= unitSeconds) {
+      return `${Math.floor(seconds / unitSeconds)}${label} ago`;
+    }
+  }
+  return "just now";
+}
+
+/** Signed, compact karma/score display, e.g. "1.2k", "-42", "0". */
+export function formatScore(value: number): string {
+  const sign = value < 0 ? "-" : "";
+  return `${sign}${formatCompactNumber(Math.abs(value))}`;
+}
