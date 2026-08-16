@@ -1,12 +1,19 @@
 "use client";
 
-import { BarChart3, FileText, LayoutGrid, MessageSquare, Users } from "lucide-react";
+import { BarChart3, FileText, History, LayoutGrid, MessageSquare, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type DashboardTab = "overview" | "posts" | "comments" | "communities" | "statistics";
+export type DashboardTab =
+  | "overview"
+  | "timeline"
+  | "posts"
+  | "comments"
+  | "communities"
+  | "statistics";
 
 const TABS: { id: DashboardTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "overview", label: "Overview", icon: LayoutGrid },
+  { id: "timeline", label: "Timeline", icon: History },
   { id: "posts", label: "Posts", icon: FileText },
   { id: "comments", label: "Comments", icon: MessageSquare },
   { id: "communities", label: "Communities", icon: Users },

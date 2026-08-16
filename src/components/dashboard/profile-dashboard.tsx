@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ProfileHeader } from "./profile-header";
 import { DashboardTabs, type DashboardTab } from "./dashboard-tabs";
 import { OverviewTab } from "./overview-tab";
+import { TimelineTab } from "./timeline-tab";
 import { ActivityBrowser } from "./activity-browser";
 import { CommunitiesTab } from "./communities-tab";
 import { StatisticsTab } from "./statistics-tab";
@@ -48,6 +49,9 @@ export function ProfileDashboard({
               statistics={statistics}
               onNavigateTab={setTab}
             />
+          )}
+          {tab === "timeline" && (
+            <TimelineTab username={username} subredditOptions={subredditOptions} />
           )}
           {tab === "posts" && (
             <ActivityBrowser

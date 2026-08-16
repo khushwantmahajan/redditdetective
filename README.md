@@ -9,12 +9,13 @@ by Reddit, Inc.
 
 ## Status
 
-**Phase 2 of 11 — profile dashboard.** Search a username to get a full dashboard: profile header,
-an overview tab, paginated/sortable/searchable posts and comments, a communities breakdown, and a
-statistics tab with activity charts. The app currently runs entirely on realistic mock Reddit data
-behind a provider abstraction, so it works with zero credentials — a real Reddit Data API provider
-is built and ready (see [Reddit API integration](#reddit-api-integration)) but not yet live pending
-Reddit's App Review. See [Roadmap](#roadmap) below for what's next.
+**Phase 3 of 11 — activity timeline.** Search a username to get a full dashboard: profile header,
+an overview tab, a chronological activity timeline, paginated/sortable/searchable posts and
+comments, a communities breakdown, and a statistics tab with activity charts. The app currently
+runs entirely on realistic mock Reddit data behind a provider abstraction, so it works with zero
+credentials — a real Reddit Data API provider is built and ready (see [Reddit API
+integration](#reddit-api-integration)) but not yet live pending Reddit's App Review. See
+[Roadmap](#roadmap) below for what's next.
 
 ## Tech stack
 
@@ -68,8 +69,9 @@ src/
                             Reddit provider (and future real credentials) server-side only
   components/
     landing/                Landing page sections
-    dashboard/               Profile dashboard: header, tabs, activity browser, communities,
-                              statistics/charts — all client components fed by server-fetched data
+    dashboard/               Profile dashboard: header, tabs, activity browser, chronological
+                              timeline, communities, statistics/charts — all client components fed
+                              by server-fetched data
     ui/                      Small reusable UI primitives (Button, Badge)
     icons/                   Hand-picked icons not available in lucide-react
   lib/
@@ -169,7 +171,7 @@ against.
 
 1. ~~Foundation + landing page~~ ✅
 2. ~~Profile dashboard (header, overview, posts, comments, communities, statistics, search/sort/filter/pagination)~~ ✅
-3. Activity timeline view
+3. ~~Activity timeline (chronological feed with date grouping, type/date/subreddit filters, search, load-more pagination)~~ ✅
 4. AI profile summary architecture
 5. AI evidence system
 6. Polish, responsiveness, accessibility, performance pass
@@ -180,3 +182,15 @@ Phases 2–4 of the original 11-phase plan (posts/comments views, communities/st
 search/filter/pagination) were folded into Phase 2 above, since the mock data layer already
 supported all of them together — building one cohesive dashboard was less work and more useful
 than three separate passes over the same UI.
+
+### Timeline (Phase 3) notes
+
+The timeline reuses the same `/api/reddit/[username]/activity` route and `RedditProvider` types as
+the Posts/Comments tabs — it's just a different client-side presentation (grouped-by-day, combined
+posts+comments, load-more pagination) over identical data. "Date-range filtering" uses the same
+`TimeRange` enum (day/week/month/year/all) the rest of the app uses, rather than an arbitrary
+from/to date picker — Reddit's real listing endpoints don't support arbitrary date-range queries
+either, so this keeps the mock and future real provider behaviorally identical. Only publicly
+accessible content is ever shown; deleted, private, restricted, or suspended accounts are rejected
+before the dashboard (including the timeline) renders at all — see `loadDashboardData` in
+`src/app/u/[username]/page.tsx`.

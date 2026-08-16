@@ -87,3 +87,37 @@ export function formatScore(value: number): string {
   const sign = value < 0 ? "-" : "";
   return `${sign}${formatCompactNumber(Math.abs(value))}`;
 }
+
+/** Absolute date + time for timeline entries, e.g. "Mar 4, 2019, 2:15 PM". */
+export function formatAbsoluteDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Day-grouping label for a timeline, e.g. "Today", "Yesterday", or
+ * "Monday, August 10" (with a year appended if not the current year).
+ * Grouping is by local calendar day, not a rolling 24h window.
+ */
+export function formatDateGroupLabel(iso: string, asOfMs: number = Date.now()): string {
+  const date = new Date(iso);
+  const now = new Date(asOfMs);
+
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dayDiff = Math.round((startOfDay(now) - startOfDay(date)) / (1000 * 60 * 60 * 24));
+
+  if (dayDiff === 0) return "Today";
+  if (dayDiff === 1) return "Yesterday";
+
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",
+  });
+}
